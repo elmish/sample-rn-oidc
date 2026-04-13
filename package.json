@@ -1,0 +1,24 @@
+{
+  "name": "sample-rn-oidc",
+  "version": "0.1.0",
+  "private": true,
+  "main": "out/App.js",
+  "scripts": {
+    "build": "dotnet fable src/app.fsproj -o out",
+    "watch": "dotnet fable watch src/app.fsproj -o out",
+    "start": "npx expo start",
+    "android": "npx expo run:android",
+    "ios": "npx expo run:ios"
+  },
+  "dependencies": {
+    "expo": "^55.0.14",
+    "expo-web-browser": "~15.0.2",
+    "expo-crypto": "~15.0.3",
+    "react": "19.2.0",
+    "react-native": "0.83.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "babel-preset-expo": "~55.0.8"
+  }
+}
