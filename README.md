@@ -6,8 +6,7 @@ Minimal Expo/React Native app demonstrating [Fable.Elmish.OIDC.ReactNative](http
 
 - [.NET SDK 10.0](https://dotnet.microsoft.com/download)
 - [Node.js](https://nodejs.org/) 20+
-- [Expo CLI](https://docs.expo.dev/get-started/installation/) (`npx expo`)
-- Expo Go app on your device, **or** a dev build
+- [Expo Go](https://expo.dev/go) app on your device or simulator
 
 ## Azure AD Setup
 
@@ -28,18 +27,18 @@ npm install
 # Compile F# → JS (watch mode)
 npm run watch
 
-# In another terminal, start Expo
-npm start
+# In another terminal, start Expo Go on iOS simulator
+npm run ios
 ```
 
-Scan the QR code with Expo Go, or press `i`/`a` for simulators.
+Or run `npm start` and scan the QR code with Expo Go on your device.
 
 ## How It Works
 
-The app uses `Fable.Elmish.OIDC.ReactNative` with:
+The app uses `Fable.Elmish.OIDC.ReactNative` (`1.0.0-beta.2`) with:
 
-- **`ReactNativeNavigation.authSession`** — opens the identity provider in an in-app browser via `expo-web-browser`, captures the authorization code callback automatically
-- **`ReactNativeRenewal.refreshToken`** — renews sessions using the `refresh_token` grant (requested via `offline_access` scope)
+- **`Api.create`** — factory that wires up crypto, HTTP, encoding, timer, and refresh-token renewal into a ready-to-use `{| init; update; subscribe |}` record
+- **`ReactNative.Navigation.authSession`** — opens the identity provider in an in-app browser via `expo-web-browser`, captures the authorization code callback automatically
 - **`ReactNative.memoryStorage`** — in-memory token storage (tokens are lost on app restart; swap with AsyncStorage for persistence)
 
 ### OIDC Flow

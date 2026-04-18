@@ -12,16 +12,23 @@ open Elmish
 open Elmish.OIDC
 open Elmish.OIDC.Types
 
-[<Literal>]
-let ClientId = "YOUR_CLIENT_ID"
+// Ensure pending auth sessions are completed when the app is activated by a redirect
+do emitJsStatement () """require('expo-web-browser').maybeCompleteAuthSession()"""
+
+// Polyfill globalThis.crypto with react-native-quick-crypto (full Web Crypto API including subtle)
+do emitJsStatement () """require('react-native-quick-crypto').install()"""
 
 [<Literal>]
-let TenantId = "YOUR_TENANT_ID"
+let ClientId = "9650ad2d-c196-42a6-a50b-eca54ab1f8d7"
 
-let private redirectUri =
-    // Expo's AuthSession proxy redirect — works in Expo Go and dev builds
-    // For production, use your app's custom scheme e.g. "sample-rn-oidc://callback"
-    emitJsExpr () "(() => { try { return require('expo-auth-session').makeRedirectUri(); } catch(e) { return 'sample-rn-oidc://callback'; } })()"
+[<Literal>]
+let TenantId = "d0d90d2f-858c-4b0a-9b0c-d9444b08555e"
+
+let private redirectUri : string =
+    // Expo's AuthSession redirect — uses scheme from app.json + path
+    emitJsExpr () "(() => { try { return require('expo-auth-session').makeRedirectUri({ path: 'callback' }); } catch(e) { return 'sample-rn-oidc://callback'; } })()"
+
+do JS.console.log("Redirect URI:", redirectUri)
 
 let oidcOptions : Options =
     { clientId = ClientId
@@ -50,20 +57,9 @@ let private getUserInfo (userinfoEndpoint: string) (accessToken: string) : Async
 
 // ── Platform ────────────────────────────────────────────────────────────
 
-let private createPlatform () : Platform =
-    let storage = ReactNative.memoryStorage ()
-    let nav = ReactNativeNavigation.authSession oidcOptions.redirectUri
-    let platform =
-        { crypto = ReactNative.crypto
-          encoding = ReactNative.encoding
-          http = ReactNative.http
-          navigation = nav
-          renewal = Unchecked.defaultof<RenewalStrategy>
-          storage = storage
-          timer = ReactNative.timer }
-    { platform with renewal = ReactNativeRenewal.refreshToken platform }
-
-let platform = createPlatform ()
+let private storage = ReactNative.memoryStorage ()
+let private nav = ReactNative.Navigation.authSession oidcOptions.redirectUri
+let private api = Api.create nav storage oidcOptions
 
 // ── Elmish ──────────────────────────────────────────────────────────────
 
@@ -74,17 +70,39 @@ type Msg =
     | OidcMsg of Msg<UserInfo>
 
 let init () =
-    let oidcModel, oidcCmd = Oidc.initPlatform platform oidcOptions
+    let oidcModel, oidcCmd = api.init
     { oidc = oidcModel }, Cmd.map OidcMsg oidcCmd
+
+let private logMsg (m: Elmish.OIDC.Types.Msg<UserInfo>) =
+    match m with
+    | Elmish.OIDC.Types.Msg.DiscoveryLoaded _ -> "DiscoveryLoaded"
+    | Elmish.OIDC.Types.Msg.DiscoveryFailed ex -> $"DiscoveryFailed: {ex.Message}"
+    | Elmish.OIDC.Types.Msg.JwksLoaded _ -> "JwksLoaded"
+    | Elmish.OIDC.Types.Msg.JwksFailed ex -> $"JwksFailed: {ex.Message}"
+    | Elmish.OIDC.Types.Msg.AuthCallback (code, state) -> $"AuthCallback code={code.[..6]}... state={state.[..6]}..."
+    | Elmish.OIDC.Types.Msg.TokenReceived _ -> "TokenReceived"
+    | Elmish.OIDC.Types.Msg.TokenValidated _ -> "TokenValidated"
+    | Elmish.OIDC.Types.Msg.ValidationFailed err -> $"ValidationFailed: {err}"
+    | Elmish.OIDC.Types.Msg.UserInfo _ -> "UserInfo"
+    | Elmish.OIDC.Types.Msg.UserInfoFailed ex -> $"UserInfoFailed: {ex.Message}"
+    | Elmish.OIDC.Types.Msg.SilentRenewResult r -> $"SilentRenewResult: {r}"
+    | Elmish.OIDC.Types.Msg.LogIn -> "LogIn"
+    | Elmish.OIDC.Types.Msg.LogOut -> "LogOut"
+    | Elmish.OIDC.Types.Msg.LoggedOut -> "LoggedOut"
+    | Elmish.OIDC.Types.Msg.SessionRestored _ -> "SessionRestored"
+    | Elmish.OIDC.Types.Msg.NoSession -> "NoSession"
+    | Elmish.OIDC.Types.Msg.Tick -> "Tick"
 
 let update (msg: Msg) (model: Model) =
     match msg with
     | OidcMsg m ->
-        let m', c = Oidc.updatePlatform platform oidcOptions getUserInfo m model.oidc
+        JS.console.log("OIDC msg:", logMsg m)
+        let m', c = api.update getUserInfo m model.oidc
+        JS.console.log("OIDC model:", m')
         { model with oidc = m' }, Cmd.map OidcMsg c
 
 let subscribe (model: Model) =
-    Oidc.subscribePlatform platform model.oidc |> Sub.map "oidc" OidcMsg
+    api.subscribe model.oidc |> Sub.map "oidc" OidcMsg
 
 // ── Views ───────────────────────────────────────────────────────────────
 

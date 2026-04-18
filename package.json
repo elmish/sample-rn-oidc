@@ -7,18 +7,22 @@
     "build": "dotnet fable src/app.fsproj -o out",
     "watch": "dotnet fable watch src/app.fsproj -o out",
     "start": "npx expo start",
-    "android": "npx expo run:android",
-    "ios": "npx expo run:ios"
+    "ios": "expo run:ios",
+    "android": "expo run:android"
   },
   "dependencies": {
-    "expo": "^55.0.14",
-    "expo-web-browser": "~15.0.2",
-    "expo-crypto": "~15.0.3",
-    "react": "19.2.0",
-    "react-native": "0.83.4"
+    "buffer": "^6.0.3",
+    "expo": "~50.0.0",
+    "expo-auth-session": "~5.4.0",
+    "expo-crypto": "~12.8.0",
+    "expo-linking": "~6.2.0",
+    "expo-web-browser": "~12.8.0",
+    "react": "18.2.0",
+    "react-native": "0.73.6",
+    "react-native-quick-crypto": "^0.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "babel-preset-expo": "~55.0.8"
+    "babel-preset-expo": "~10.0.0"
   }
 }
